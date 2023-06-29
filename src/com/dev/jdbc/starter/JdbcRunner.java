@@ -61,11 +61,16 @@ public class JdbcRunner {
         System.out.println(result);*/
         //var result = getFlightsBetween(LocalDate.of(2020, 1, 1).atStartOfDay(), LocalDateTime.now());
         //System.out.println(result);
-        checkMetaData();
+        try {
+            checkMetaData();
+        } finally {
+            ConnectionManager.closePool();
+        }
+
     }
 
     private static void checkMetaData() throws SQLException {
-        try (var connection = ConnectionManager.open()) {
+        try (var connection = ConnectionManager.get()) {
             var metaData = connection.getMetaData();
             var catalogs = metaData.getCatalogs();
             while (catalogs.next()) {
@@ -75,7 +80,7 @@ public class JdbcRunner {
                 while (schemas.next()) {
                     var schema = schemas.getString("TABLE_SCHEM");
                     //System.out.println(schema);
-                    var tables = metaData.getTables(catalog, schema, "%", new String[] {"TABLE"});
+                    var tables = metaData.getTables(catalog, schema, "%", new String[]{"TABLE"});
                     if (schema.equals("public")) {
                         while (tables.next()) {
                             System.out.println(tables.getString("TABLE_NAME"));
@@ -93,7 +98,7 @@ public class JdbcRunner {
                 WHERE departure_date BETWEEN ? AND ?
                 """;
         List<Long> result = new ArrayList<>();
-        try (var connection = ConnectionManager.open();
+        try (var connection = ConnectionManager.get();
              var prepareStatement = connection.prepareStatement(sql)) {
             prepareStatement.setFetchSize(50);
             prepareStatement.setQueryTimeout(10);
@@ -122,7 +127,7 @@ public class JdbcRunner {
                 --WHERE flight_id = %s
                 """;//.formatted(flightId);
         List<Long> result = new ArrayList<>();
-        try (var connection = ConnectionManager.open();
+        try (var connection = ConnectionManager.get();
              //var statement = connection.createStatement()) {
              var prepareStatement = connection.prepareStatement(sql)) {
             prepareStatement.setLong(1, flightId);
