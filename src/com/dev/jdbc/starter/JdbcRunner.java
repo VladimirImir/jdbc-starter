@@ -4,6 +4,8 @@ import com.dev.jdbc.starter.util.ConnectionManager;
 import org.postgresql.Driver;
 
 import java.sql.*;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -54,21 +56,51 @@ public class JdbcRunner {
                 System.out.println("--------");
             }*/
         //}
-        String flightId = "2 OR 1 = 1; DROP TABLE info";
+        /*Long flightId = 2L;
         var result = getTicketsByFlightId(flightId);
+        System.out.println(result);*/
+        var result = getFlightsBetween(LocalDate.of(2020, 1, 1).atStartOfDay(), LocalDateTime.now());
         System.out.println(result);
     }
 
-    public static List<Long> getTicketsByFlightId(String flightId) throws SQLException {
+    public static List<Long> getFlightsBetween(LocalDateTime start, LocalDateTime end) throws SQLException {
+        String sql = """
+                SELECT id
+                FROM flight
+                WHERE departure_date BETWEEN ? AND ?
+                """;
+        List<Long> result = new ArrayList<>();
+        try (var connection = ConnectionManager.open();
+             var prepareStatement = connection.prepareStatement(sql)) {
+            System.out.println(prepareStatement);
+            prepareStatement.setTimestamp(1, Timestamp.valueOf(start));
+            System.out.println(prepareStatement);
+            prepareStatement.setTimestamp(2, Timestamp.valueOf(end));
+            System.out.println(prepareStatement);
+
+
+            var resultSet = prepareStatement.executeQuery();
+            while (resultSet.next()) {
+                result.add(resultSet.getLong("id"));
+            }
+        }
+        return result;
+    }
+
+    public static List<Long> getTicketsByFlightId(Long flightId) throws SQLException {
         String sql = """
                 SELECT id
                 FROM ticket
-                WHERE flight_id = %s
-                """.formatted(flightId);
+                WHERE flight_id = ?
+                --WHERE flight_id = %s
+                """;//.formatted(flightId);
         List<Long> result = new ArrayList<>();
         try (var connection = ConnectionManager.open();
-             var statement = connection.createStatement()) {
-            var resultSet = statement.executeQuery(sql);
+             //var statement = connection.createStatement()) {
+             var prepareStatement = connection.prepareStatement(sql)) {
+            prepareStatement.setLong(1, flightId);
+            var resultSet = prepareStatement.executeQuery();
+            //var resultSet = statement.executeQuery(sql);
             while (resultSet.next()) {
                 //result.add(resultSet.getLong("id"));
                 result.add(resultSet.getObject("id", Long.class)); // NULL safe
