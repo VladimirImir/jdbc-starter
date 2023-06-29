@@ -23,19 +23,29 @@ public class JdbcRunner {
                 ('Test2'),
                 ('Test3'),
                 ('Test4');*/
-                UPDATE info
+                /*UPDATE info
                 SET data = 'TestTest'
                 WHERE id = 5
-                RETURNING *
+                RETURNING **/
+                SELECT *
+                FROM ticket
+                                
                 """;
         try (var connection = ConnectionManager.open();
              var statement = connection.createStatement()) {
             System.out.println(connection.getSchema());
             System.out.println(connection.getTransactionIsolation());
-            var executeResult = statement.execute(sql);
+            //var executeResult = statement.execute(sql);
             //var executeResult = statement.executeUpdate(sql);
-            System.out.println(executeResult);
-            System.out.println(statement.getUpdateCount());
+            var executeResult = statement.executeQuery(sql);
+            //System.out.println(executeResult);
+            //System.out.println(statement.getUpdateCount());
+            while (executeResult.next()) {
+                System.out.println(executeResult.getLong("id"));
+                System.out.println(executeResult.getString("passenger_no"));
+                System.out.println(executeResult.getBigDecimal("cost"));
+                System.out.println("--------");
+            }
         }
     }
 }
