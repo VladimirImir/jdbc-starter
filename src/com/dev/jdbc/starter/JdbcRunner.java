@@ -12,6 +12,9 @@ import java.util.List;
 public class JdbcRunner {
 
     public static void main(String[] args) throws SQLException {
+
+        /** JDBC. 17. DAO. Теория */
+
         //Class<Driver> driverClass = Driver.class;
         //String sql = """
                 /*CREATE TABLE IF NOT EXISTS info (
