@@ -5,6 +5,9 @@ import com.dev.jdbc.starter.exception.DaoException;
 import com.dev.jdbc.starter.util.ConnectionManager;
 
 import java.sql.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
 
 public class TicketDao {
 
@@ -17,8 +20,87 @@ public class TicketDao {
             INSERT INTO ticket (passenger_no, passenger_name, flight_id, seat_no, cost) 
             VALUES (?,?,?,?,?);
             """;
+    private static final String UPDATE_SQL = """
+            UPDATE ticket
+            SET passenger_no = ?,
+                passenger_name = ?,
+                flight_id = ?,
+                seat_no = ?,
+                cost = ?
+            WHERE id = ?
+            """;
+    private static final String FIND_ALL_SQL = """
+            SELECT id,
+                   passenger_no,
+                   passenger_name,
+                   flight_id,
+                   seat_no,
+                   cost               
+            FROM ticket
+            """;
+    private static final String FIND_BY_ID_SQL = FIND_ALL_SQL + """
+            WHERE id = ?
+            """;
 
     private TicketDao() {
+    }
+
+    public List<Ticket> findAll() {
+        try (var connection = ConnectionManager.get();
+             var prepareStatement = connection.prepareStatement(FIND_ALL_SQL)) {
+            var resultSet = prepareStatement.executeQuery();
+            List<Ticket> tickets = new ArrayList<>();
+            while (resultSet.next()) {
+                tickets.add(buildTicket(resultSet));
+            }
+            return tickets;
+        } catch (SQLException throwables) {
+            throw new DaoException(throwables);
+        }
+    }
+
+    public Optional<Ticket> findById(Long id) {
+        try (var connection = ConnectionManager.get();
+             var prepareStatement = connection.prepareStatement(FIND_BY_ID_SQL)) {
+            prepareStatement.setLong(1, id);
+
+            var resultSet = prepareStatement.executeQuery();
+            Ticket ticket = null;
+            if (resultSet.next()) {
+                ticket = buildTicket(resultSet);
+            }
+
+            return Optional.ofNullable(ticket);
+        } catch (SQLException throwables) {
+            throw new DaoException(throwables);
+        }
+    }
+
+    private Ticket buildTicket(ResultSet resultSet) throws SQLException {
+        return new Ticket(
+                resultSet.getLong("id"),
+                resultSet.getString("passenger_no"),
+                resultSet.getString("passenger_name"),
+                resultSet.getLong("flight_id"),
+                resultSet.getString("seat_no"),
+                resultSet.getBigDecimal("cost")
+        );
+    }
+
+    public void update(Ticket ticket) {
+        try (var connection = ConnectionManager.get();
+             var prepareStatement = connection.prepareStatement(UPDATE_SQL)) {
+            prepareStatement.setString(1, ticket.getPassengerNo());
+            prepareStatement.setString(2, ticket.getPassengerName());
+            prepareStatement.setLong(3, ticket.getFlightId());
+            prepareStatement.setString(4, ticket.getSeatNo());
+            prepareStatement.setBigDecimal(5, ticket.getCost());
+            prepareStatement.setLong(6, ticket.getId());
+
+            prepareStatement.executeUpdate();
+        } catch (SQLException throwables) {
+            throw new DaoException(throwables);
+        }
     }
 
     public Ticket save(Ticket ticket) {
@@ -38,7 +120,7 @@ public class TicketDao {
             }
             return ticket;
         } catch (SQLException throwables) {
-            throw new RuntimeException(throwables);
+            throw new DaoException(throwables);
         }
     }
 
